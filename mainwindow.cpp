@@ -51,12 +51,13 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "console.h"
 #include "settingsdialog.h"
-
+#include "console.h"
 #include <QMessageBox>
 #include <QLabel>
 #include <QtSerialPort/QSerialPort>
+#include <QTextStream>
+#include <QFile>
 
 //! [0]
 MainWindow::MainWindow(QWidget *parent) :
@@ -67,20 +68,48 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     console = new Console;
     console->setEnabled(false);
-    setCentralWidget(console);
+    console->setParent(ui->widgetConsole);
+
+    QHBoxLayout *layoutConsole = new QHBoxLayout();
+    layoutConsole->addWidget(console);
+    layoutConsole->setMargin(0);
+    ui->widgetConsole->setLayout(layoutConsole);
+
+
+    //setCentralWidget(console);
 //! [1]
     serial = new QSerialPort(this);
 //! [1]
     settings = new SettingsDialog;
 
+    listATCmdHistory = new QStringList;
+
+    QFile file("atcommand.txt");
+    QTextStream in(&file);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        //while (!file.atEnd())
+        while (!in.atEnd())
+        {
+            QString strLineWithoutLF = in.readLine();
+            //QString strLineWithLF = file.readLine();
+            if(false == listATCmdHistory->contains(strLineWithoutLF)){
+                listATCmdHistory->append(strLineWithoutLF);
+            }
+        }
+        file.close();
+    }
+    ui->listWidget->clear();
+    ui->listWidget->addItems(*listATCmdHistory);
+
     ui->actionConnect->setEnabled(true);
     ui->actionDisconnect->setEnabled(false);
     ui->actionQuit->setEnabled(true);
     ui->actionConfigure->setEnabled(true);
+    ui->actionSave_Command_History->setEnabled(true);
 
     status = new QLabel;
     ui->statusBar->addWidget(status);
-
     initActionsConnections();
 
     connect(serial, static_cast<void (QSerialPort::*)(QSerialPort::SerialPortError)>(&QSerialPort::error),
@@ -98,6 +127,9 @@ MainWindow::~MainWindow()
 {
     delete settings;
     delete ui;
+    delete status;
+    delete serial;
+    delete listATCmdHistory;
 }
 
 //! [4]
@@ -142,16 +174,17 @@ void MainWindow::closeSerialPort()
 
 void MainWindow::about()
 {
-    QMessageBox::about(this, tr("About Simple Terminal"),
-                       tr("The <b>Simple Terminal</b> example demonstrates how to "
-                          "use the Qt Serial Port module in modern GUI applications "
-                          "using Qt, with a menu bar, toolbars, and a status bar."));
+    QMessageBox::about(this, tr("About Terminal"),
+                       tr("God's in his heaven, all is right with the world."));
 }
 
 //! [6]
 void MainWindow::writeData(const QByteArray &data)
 {
     serial->write(data);
+    if(true == ui->crlfcheckBox->isChecked()){
+        serial->write("\r\n", 2);
+    }
 }
 //! [6]
 
@@ -160,6 +193,11 @@ void MainWindow::readData()
 {
     QByteArray data = serial->readAll();
     console->putData(data);
+    //ui->textBrowser->insertPlainText(data);
+    //ui->textBrowser->insertPlainText(data);
+    //QTextCursor cursor = ui->textBrowser->textCursor();
+    //cursor.movePosition(QTextCursor::End);
+    //ui->textBrowser->setTextCursor(cursor);
 }
 //! [7]
 
@@ -172,19 +210,104 @@ void MainWindow::handleError(QSerialPort::SerialPortError error)
     }
 }
 //! [8]
+//!
+//! [9]
+void MainWindow::onClear()
+{
+    //ui->textBrowser->clear();
+    console->clear();
+}
+//! [9]
+//!
+//! [10]
+void MainWindow::onSaveCommandHistory()
+{
+    QFile file("atcommand.txt");
 
+    if(false == file.exists()){
+        return;
+    }
+    file.remove();
+    QTextStream out(&file);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append))
+    {
+        for(int i = 0; i< listATCmdHistory->size(); i++)
+        {
+            QString tmp = listATCmdHistory->at(i);
+            out<<tmp<<endl;
+        }
+        file.close();
+    }
+}
+//! [10]
 void MainWindow::initActionsConnections()
 {
     connect(ui->actionConnect, &QAction::triggered, this, &MainWindow::openSerialPort);
     connect(ui->actionDisconnect, &QAction::triggered, this, &MainWindow::closeSerialPort);
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::close);
     connect(ui->actionConfigure, &QAction::triggered, settings, &SettingsDialog::show);
-    connect(ui->actionClear, &QAction::triggered, console, &Console::clear);
+    connect(ui->actionClear, &QAction::triggered, this, &MainWindow::onClear);
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::about);
     connect(ui->actionAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt);
+    connect(ui->actionSave_Command_History, &QAction::triggered, this, &MainWindow::onSaveCommandHistory);
 }
 
 void MainWindow::showStatusMessage(const QString &message)
 {
     status->setText(message);
 }
+
+void MainWindow::on_pushButton_clicked()
+{
+    QByteArray data;
+    if(true == ui->hexCheckBox->isChecked()){
+        data = QByteArray::fromHex (ui->textEdit->toPlainText().toLatin1());
+    }
+    else {
+        data = ui->textEdit->toPlainText().toLatin1();
+    }
+
+    writeData(data);
+    if(false == listATCmdHistory->contains(data)){
+        listATCmdHistory->append(data);
+        ui->listWidget->clear();
+        ui->listWidget->addItems(*listATCmdHistory);
+    }
+
+    //ui->textEdit->insertPlainText(ui->textEdit->toPlainText().toLatin1().toHex());
+}
+
+void MainWindow::on_hexCheckBox_clicked(bool checked)
+{
+    if(true == checked) {
+        QString strHex = ui->textEdit->toPlainText().toLatin1().toHex();
+        QString strHexUpper = strHex.toUpper();
+        QString strHexUpperWithSpace;
+        // add space
+        for(int i = 0;i < strHexUpper.length(); i += 2) {
+            QString strTemp = strHexUpper.mid(i,2);
+            strHexUpperWithSpace += strTemp;
+            strHexUpperWithSpace += " ";
+        }
+        ui->textEdit->clear();
+        ui->textEdit->setText(strHexUpperWithSpace);
+    }
+    else {
+        QString strAscii = QByteArray::fromHex (ui->textEdit->toPlainText().toLatin1());
+        ui->textEdit->clear();
+        ui->textEdit->setText(strAscii);
+    }
+}
+
+void MainWindow::on_listWidget_doubleClicked(const QModelIndex &index)
+{
+    if(false == ui->delCheckBox->isChecked()){
+        writeData(ui->listWidget->currentItem()->text().toLatin1());
+    }
+    else {
+        listATCmdHistory->removeOne(ui->listWidget->currentItem()->text().toLatin1());
+        ui->listWidget->clear();
+        ui->listWidget->addItems(*listATCmdHistory);
+    }
+}
+

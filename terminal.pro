@@ -2,6 +2,7 @@ QT += widgets serialport
 
 TARGET = terminal
 TEMPLATE = app
+RC_ICONS = images/logo.ico
 
 SOURCES += \
     main.cpp \
@@ -21,5 +22,4 @@ FORMS += \
 RESOURCES += \
     terminal.qrc
 
-target.path = $$[QT_INSTALL_EXAMPLES]/serialport/terminal
 INSTALLS += target

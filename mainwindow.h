@@ -85,8 +85,12 @@ private slots:
     void about();
     void writeData(const QByteArray &data);
     void readData();
-
+    void onClear();
+    void onSaveCommandHistory();
     void handleError(QSerialPort::SerialPortError error);
+    void on_pushButton_clicked();
+    void on_hexCheckBox_clicked(bool checked);
+    void on_listWidget_doubleClicked(const QModelIndex &index);
 
 private:
     void initActionsConnections();
@@ -99,6 +103,7 @@ private:
     Console *console;
     SettingsDialog *settings;
     QSerialPort *serial;
+    QStringList *listATCmdHistory;
 };
 
 #endif // MAINWINDOW_H

@@ -60,11 +60,11 @@ Console::Console(QWidget *parent)
     , localEchoEnabled(false)
 {
     document()->setMaximumBlockCount(100);
-    QPalette p = palette();
-    p.setColor(QPalette::Base, Qt::black);
-    p.setColor(QPalette::Text, Qt::green);
-    setPalette(p);
-
+    //QPalette p = palette();
+    //p.setColor(QPalette::Base, Qt::black);
+    //p.setColor(QPalette::Text, Qt::green);
+    //setPalette(p);
+    setCursorWidth(6);
 }
 
 void Console::putData(const QByteArray &data)
