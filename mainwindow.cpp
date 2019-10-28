@@ -91,10 +91,10 @@ MainWindow::MainWindow(QWidget *parent) :
         //while (!file.atEnd())
         while (!in.atEnd())
         {
-            QString strLineWithoutLF = in.readLine();
+            QString strAsciiLineWithoutLF = QByteArray::fromHex (in.readLine().toLatin1());
             //QString strLineWithLF = file.readLine();
-            if(false == listATCmdHistory->contains(strLineWithoutLF)){
-                listATCmdHistory->append(strLineWithoutLF);
+            if(false == listATCmdHistory->contains(strAsciiLineWithoutLF)){
+                listATCmdHistory->append(strAsciiLineWithoutLF);
             }
         }
         file.close();
@@ -233,8 +233,8 @@ void MainWindow::onSaveCommandHistory()
     {
         for(int i = 0; i< listATCmdHistory->size(); i++)
         {
-            QString tmp = listATCmdHistory->at(i);
-            out<<tmp<<endl;
+            QString stringHex = listATCmdHistory->at(i).toLatin1().toHex();
+            out<<stringHex<<endl;
         }
         file.close();
     }
