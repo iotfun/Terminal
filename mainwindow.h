@@ -57,7 +57,7 @@
 #include <QMainWindow>
 
 #include <QtSerialPort/QSerialPort>
-
+#include <QFile>
 QT_BEGIN_NAMESPACE
 
 class QLabel;
@@ -104,6 +104,7 @@ private:
     SettingsDialog *settings;
     QSerialPort *serial;
     QStringList *listATCmdHistory;
+    QFile *fileLog;
 };
 
 #endif // MAINWINDOW_H

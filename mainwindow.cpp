@@ -58,6 +58,7 @@
 #include <QtSerialPort/QSerialPort>
 #include <QTextStream>
 #include <QFile>
+#include <QDateTime>
 
 //! [0]
 MainWindow::MainWindow(QWidget *parent) :
@@ -83,6 +84,7 @@ MainWindow::MainWindow(QWidget *parent) :
     settings = new SettingsDialog;
 
     listATCmdHistory = new QStringList;
+    fileLog = new QFile;
 
     QFile file("atcommand.txt");
     QTextStream in(&file);
@@ -130,6 +132,11 @@ MainWindow::~MainWindow()
     delete status;
     delete serial;
     delete listATCmdHistory;
+    if (true == fileLog->exists())
+    {
+       fileLog->close();
+    }
+    delete fileLog;
 }
 
 //! [4]
@@ -152,6 +159,13 @@ void MainWindow::openSerialPort()
                           .arg(p.name).arg(p.stringBaudRate).arg(p.stringDataBits)
                           .arg(p.stringParity).arg(p.stringStopBits).arg(p.stringFlowControl));
         setWindowTitle(p.name);
+
+        QString currentDateTime = QDateTime::currentDateTime().toString("yyyy_MM_dd_hh_mm_ss_");
+        fileLog->setFileName("logs/" + currentDateTime + p.name + ".txt");
+        if (false == fileLog->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append))
+        {
+            QMessageBox::critical(this, tr("Error"), fileLog->errorString());
+        }
     } else {
         QMessageBox::critical(this, tr("Error"), serial->errorString());
 
@@ -200,6 +214,11 @@ void MainWindow::readData()
     //QTextCursor cursor = ui->textBrowser->textCursor();
     //cursor.movePosition(QTextCursor::End);
     //ui->textBrowser->setTextCursor(cursor);
+    QTextStream out(fileLog);
+    if (true == fileLog->exists())
+    {
+        out<<data<<endl;
+    }
 }
 //! [7]
 
