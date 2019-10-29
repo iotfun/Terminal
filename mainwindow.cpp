@@ -151,6 +151,7 @@ void MainWindow::openSerialPort()
         showStatusMessage(tr("Connected to %1 : %2, %3, %4, %5, %6")
                           .arg(p.name).arg(p.stringBaudRate).arg(p.stringDataBits)
                           .arg(p.stringParity).arg(p.stringStopBits).arg(p.stringFlowControl));
+        setWindowTitle(p.name);
     } else {
         QMessageBox::critical(this, tr("Error"), serial->errorString());
 
@@ -169,6 +170,7 @@ void MainWindow::closeSerialPort()
     ui->actionDisconnect->setEnabled(false);
     ui->actionConfigure->setEnabled(true);
     showStatusMessage(tr("Disconnected"));
+    setWindowTitle("Terminal");
 }
 //! [5]
 
